@@ -1,0 +1,1377 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SimRail OS - Windows 98/XP</title>
+  <link rel="stylesheet" href="https://unpkg.com/98.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  <style>
+    /* Estilos globales y del escritorio */
+    body {
+      font-family: 'MS Sans Serif', 'Segoe UI', sans-serif;
+      font-size: 16px;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      width: 100vw;
+      background-image: url('https://placehold.co/1920x1080/008080/ffffff?text=Windows+98');
+      background-size: cover;
+      background-repeat: no-repeat;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      color: black;
+      transition: background-color 0.5s, background-image 0.5s;
+    }
+
+    body.xp-theme {
+      background-image: url('https://placehold.co/1920x1080/3a6639/ffffff?text=Windows+XP');
+      color: #333;
+    }
+
+    .desktop {
+      flex-grow: 1;
+      padding: 16px;
+      position: relative;
+    }
+
+    .desktop-icon {
+      width: 80px;
+      text-align: center;
+      cursor: pointer;
+      color: white;
+      text-shadow: 1px 1px 2px black;
+      margin-bottom: 20px;
+      user-select: none;
+    }
+
+    .desktop-icon img {
+      width: 48px;
+      height: 48px;
+      image-rendering: pixelated;
+    }
+
+    .desktop-icon p {
+      margin: 4px 0 0 0;
+      word-wrap: break-word;
+      font-size: 12px;
+    }
+
+    /* Barra de tareas (Taskbar) */
+    .taskbar {
+      height: 30px;
+      background-color: #c0c0c0;
+      border-top: 2px solid #fff;
+      border-right: 2px solid #808080;
+      border-left: 2px solid #fff;
+      border-bottom: 2px solid #000;
+      display: flex;
+      align-items: center;
+      padding: 0 4px;
+      box-sizing: border-box;
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      z-index: 200;
+    }
+    
+    body.xp-theme .taskbar {
+      background: linear-gradient(to right, #4a75d7, #2f56a5);
+      border: none;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.3);
+    }
+    
+    .start-button {
+      height: 22px;
+      padding: 0 8px;
+      background-color: #c0c0c0;
+      border-top: 2px solid #fff;
+      border-left: 2px solid #fff;
+      border-bottom: 2px solid #000;
+      border-right: 2px solid #000;
+      display: flex;
+      align-items: center;
+      font-weight: bold;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 1px 1px #000;
+    }
+
+    .start-button:active {
+      box-shadow: none;
+      border-top: 2px solid #000;
+      border-left: 2px solid #000;
+      border-bottom: 2px solid #fff;
+      border-right: 2px solid #fff;
+    }
+
+    body.xp-theme .start-button {
+      background: linear-gradient(to top, #36a536, #74d274);
+      border: none;
+      color: white;
+      font-weight: bold;
+      border-radius: 4px;
+    }
+
+    .start-button img {
+      height: 18px;
+      margin-right: 4px;
+    }
+
+    .task-divider {
+      height: 100%;
+      width: 2px;
+      background-color: #808080;
+      border-right: 1px solid #fff;
+      margin: 0 4px;
+    }
+
+    body.xp-theme .task-divider {
+        display: none;
+    }
+
+    .time-container {
+      margin-left: auto;
+      padding: 0 8px;
+      background-color: #c0c0c0;
+      border-top: 2px solid #808080;
+      border-left: 2px solid #808080;
+      border-bottom: 2px solid #fff;
+      border-right: 2px solid #fff;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      height: 22px;
+    }
+
+    body.xp-theme .time-container {
+      background-color: #d1d1d1;
+      border: 1px solid #808080;
+      border-radius: 4px;
+    }
+
+    /* Menú de Inicio */
+    #startMenu {
+      position: absolute;
+      bottom: 30px;
+      left: 0;
+      width: 200px;
+      background-color: #c0c0c0;
+      border-top: 2px solid #fff;
+      border-left: 2px solid #fff;
+      border-bottom: 2px solid #000;
+      border-right: 2px solid #000;
+      display: none;
+      flex-direction: column;
+      z-index: 201;
+      padding: 2px;
+    }
+    
+    #startMenu .menu-item {
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    #startMenu .menu-item:hover {
+      background-color: #000080;
+      color: white;
+    }
+    
+    #startMenu img {
+      height: 16px;
+      width: 16px;
+      image-rendering: pixelated;
+    }
+
+    /* Ventana de la aplicación */
+    .window {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 600px;
+      min-height: 400px;
+      max-width: 90vw;
+      max-height: 90vh;
+      resize: both;
+      overflow: hidden;
+      display: none;
+      z-index: 100;
+      border: 2px solid #000;
+      background-color: #c0c0c0;
+      width: 800px;
+      height: 600px;
+    }
+    
+    body.xp-theme .window {
+      border: 1px solid #4a75d7;
+      background: linear-gradient(to bottom, #d6e8ff, #ddeeff);
+      border-radius: 8px 8px 0 0;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    .window:not(.maximized) {
+      cursor: move;
+    }
+    
+    .window .title-bar {
+      height: 24px;
+      padding: 0 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    body.xp-theme .window .title-bar {
+      background: linear-gradient(to right, #4a75d7, #2f56a5);
+      color: white;
+      border-bottom: 1px solid #2f56a5;
+      border-radius: 6px 6px 0 0;
+    }
+    
+    .window-body {
+      display: flex;
+      gap: 16px;
+      height: calc(100% - 24px);
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    
+    body.xp-theme .window-body {
+        background-color: #f0f0f0;
+    }
+
+    /* Controles de la ventana */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 200px;
+      padding: 8px;
+      border: 2px inset;
+      background-color: #f3f3f3;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    body.xp-theme .controls {
+      border: 1px solid #ccc;
+      background-color: white;
+    }
+    
+    .clock-container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .analog-clock {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid black;
+      position: relative;
+    }
+
+    body.xp-theme .analog-clock {
+        border: 2px solid #4a75d7;
+    }
+
+    .analog-clock::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 6px;
+      height: 6px;
+      background: black;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+    
+    .analog-clock .hand {
+      position: absolute;
+      left: 50%;
+      bottom: 50%;
+      transform-origin: bottom center;
+      background: black;
+      border-radius: 5px;
+      transition: none;
+    }
+    
+    body.xp-theme .analog-clock .hand {
+        background: #333;
+    }
+
+    .analog-clock .hour {
+      width: 4px;
+      height: 25px;
+      transform: translateX(-50%);
+    }
+    
+    .analog-clock .minute {
+      width: 3px;
+      height: 40px;
+      transform: translateX(-50%);
+    }
+
+    .analog-clock .second {
+      width: 1px;
+      height: 45px;
+      background: red;
+      transform: translateX(-50%);
+    }
+
+    .clock-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    /* Estilos del explorador de archivos */
+    .file-explorer {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      border: 2px inset;
+      background-color: #f3f3f3;
+      padding: 8px;
+      overflow: hidden;
+    }
+    
+    body.xp-theme .file-explorer {
+        border: 1px solid #ccc;
+        background-color: white;
+    }
+    
+    .explorer-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .explorer-path {
+      flex-grow: 1;
+      padding: 4px;
+      border: 2px solid #808080;
+      background-color: white;
+    }
+
+    body.xp-theme .explorer-path {
+      border: 1px solid #aaa;
+      background-color: white;
+      border-radius: 4px;
+    }
+    
+    .explorer-content {
+      flex-grow: 1;
+      border: 2px solid #808080;
+      background-color: white;
+      padding: 4px;
+      overflow-y: auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-content: flex-start;
+    }
+    
+    body.xp-theme .explorer-content {
+        border: 1px solid #aaa;
+        background-color: #ddeeff;
+    }
+
+    .explorer-content.list-view {
+      display: block;
+    }
+    
+    .explorer-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      cursor: pointer;
+      padding: 4px;
+      border: 1px solid transparent;
+      user-select: none;
+      position: relative;
+      flex-grow: 0; 
+      flex-shrink: 0;
+      width: 100px;
+    }
+
+    .explorer-item.list-view {
+      flex-direction: row;
+      gap: 8px;
+      text-align: left;
+      width: 100%;
+    }
+
+    .explorer-item:hover {
+      background-color: #000080;
+      color: white;
+    }
+
+    .explorer-item:active {
+      border: 1px dashed #000080;
+    }
+
+    body.xp-theme .explorer-item:hover {
+        background-color: #4a75d7;
+        color: white;
+    }
+    
+    body.xp-theme .explorer-item:active {
+        border: 1px dashed #4a75d7;
+        color: white;
+    }
+    
+    .explorer-item img {
+      width: 32px;
+      height: 32px;
+      image-rendering: pixelated;
+      flex-shrink: 0;
+    }
+
+    .explorer-item p {
+      margin: 4px 0 0 0;
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    .explorer-item input {
+      width: 80%;
+      text-align: center;
+    }
+
+    .train-list-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+    }
+
+    .train-search {
+      margin-bottom: 8px;
+      display: flex;
+      gap: 4px;
+    }
+
+    .train-search input, .train-search select {
+      padding: 2px;
+      border: 2px inset;
+      flex-grow: 1;
+    }
+    
+    body.xp-theme .train-search input, body.xp-theme .train-search select {
+        border: 1px solid #aaa;
+        border-radius: 4px;
+    }
+
+    .train-list {
+      flex-grow: 1;
+      border: 2px solid #808080;
+      background-color: white;
+      padding: 4px;
+      overflow-y: auto;
+      font-size: 12px;
+    }
+    
+    body.xp-theme .train-list {
+        border: 1px solid #aaa;
+        background-color: white;
+    }
+    
+    .train-item {
+      margin: 6px 0;
+      padding: 8px;
+      border: 1px solid #e0e0e0;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .train-item.active {
+      background: linear-gradient(90deg, #e8f5e8, #f0fff0);
+      border-color: #4CAF50;
+    }
+
+    .train-item.inactive {
+      background: linear-gradient(90deg, #fff5f5, #ffe0e0);
+      border-color: #f44336;
+      opacity: 0.7;
+    }
+
+    .train-item.approaching {
+      background: linear-gradient(90deg, #fff8e1, #fffde7);
+      border-color: #FF9800;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { background: linear-gradient(90deg, #fff8e1, #fffde7); }
+      50% { background: linear-gradient(90deg, #ffecb3, #fff9c4); }
+    }
+
+    .train-item:hover {
+      background: #e3f2fd !important;
+      border-color: #2196F3;
+    }
+
+    .train-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .train-number {
+      color: #0066cc;
+      font-size: 14px;
+    }
+
+    .train-status {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      color: white;
+      font-weight: bold;
+    }
+
+    .status-active { background-color: #4CAF50; }
+    .status-inactive { background-color: #f44336; }
+    .status-approaching { background-color: #FF9800; }
+
+    .train-details {
+      font-size: 10px;
+      color: #666;
+      line-height: 1.4;
+    }
+
+    .train-type-badge {
+      display: inline-block;
+      background: #2196F3;
+      color: white;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 8px;
+      margin-right: 4px;
+      font-weight: bold;
+    }
+    
+    /* Utilidades de la ventana */
+    .maximize-button {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 1px solid black;
+      margin-left: 2px;
+      position: relative;
+    }
+    .maximize-button::before {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border: 1px solid black;
+      top: 2px;
+      left: 2px;
+    }
+
+    body.xp-theme .title-bar-controls button {
+        background: linear-gradient(to top, #c4c4c4, #e8e8e8);
+        border: 1px solid #666;
+        border-radius: 2px;
+    }
+    
+    .close-button {
+      font-weight: bold;
+      color: white;
+      text-align: center;
+      line-height: 14px;
+      padding: 0 4px;
+      background-color: #c0c0c0;
+      border-top: 2px solid #fff;
+      border-left: 2px solid #fff;
+      border-bottom: 2px solid #000;
+      border-right: 2px solid #000;
+    }
+    .close-button:active {
+      border-top: 2px solid #000;
+      border-left: 2px solid #000;
+      border-bottom: 2px solid #fff;
+      border-right: 2px solid #fff;
+    }
+
+    body.xp-theme .title-bar-controls button[aria-label="Close"] {
+        background: linear-gradient(to top, #e81d1d, #ff4c4c);
+        border: 1px solid #7c0404;
+        color: white;
+    }
+    
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(192, 192, 192, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 101;
+      font-size: 16px;
+      color: black;
+      flex-direction: column;
+    }
+
+    .error-message {
+      padding: 10px;
+      color: red;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .difficulty-badge {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      background: #ff6b6b;
+      color: white;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      font-size: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    .difficulty-0 { background: #51cf66; }
+    .difficulty-1 { background: #ffd43b; }
+    .difficulty-2 { background: #ff9500; }
+    .difficulty-3 { background: #ff6b6b; }
+    .difficulty-4 { background: #e64980; }
+    .difficulty-5 { background: #9775fa; }
+
+    .realtime-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px;
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      margin-bottom: 8px;
+      font-size: 11px;
+    }
+
+    .realtime-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4CAF50;
+      animation: blink 1.5s infinite;
+    }
+
+    .realtime-indicator.offline {
+      background: #f44336;
+      animation: none;
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0.3; }
+    }
+
+    .notification-toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(45deg, #2196F3, #21CBF3);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 300;
+      font-size: 14px;
+      font-weight: bold;
+      transform: translateX(400px);
+      transition: transform 0.3s ease;
+    }
+
+    .notification-toast.show {
+      transform: translateX(0);
+    }
+	
+	.advanced-filters {
+		border: 1px solid #808080;
+		padding: 8px;
+		margin-bottom: 8px;
+		font-size: 11px;
+	}
+	.advanced-filters legend {
+		font-weight: bold;
+	}
+	.filter-controls {
+		display: flex;
+		gap: 16px;
+		align-items: center;
+		flex-wrap: wrap;
+	}
+	.radius-filter {
+		display: flex;
+		gap: 8px;
+		align-items: center;
+	}
+	.radius-filter span {
+		font-weight: bold;
+	}
+  </style>
+</head>
+<body>
+
+  <div class="desktop">
+    <div class="desktop-icon" id="simrailAppIcon">
+      <img src="https://win98icons.alexmeub.com/icons/png/simcity_1-3.png" alt="Simrail Online Executable" />
+      <p>Simrail_online.exe</p>
+    </div>
+  </div>
+
+  <div class="taskbar">
+    <div class="start-button" id="startButton">
+      <img src="https://win98icons.alexmeub.com/icons/png/windows_start-1.png" alt="Start Menu" />
+      <span>Inicio</span>
+    </div>
+    <div class="task-divider"></div>
+    <div class="time-container" id="taskbarTime"></div>
+  </div>
+
+  <div id="startMenu">
+    <div class="menu-item" id="theme98">
+      <img src="https://win98icons.alexmeub.com/icons/png/display_properties-1.png" alt="Themes" />
+      <span>Windows 98</span>
+    </div>
+    <div class="menu-item" id="themeXP">
+      <img src="https://win98icons.alexmeub.com/icons/png/display_properties-2.png" alt="Themes" />
+      <span>Windows XP</span>
+    </div>
+  </div>
+  
+  <div class="window" id="simrailAppWindow">
+    <div class="title-bar">
+      <div class="title-bar-text">Simrail Online</div>
+      <div class="title-bar-controls">
+        <button aria-label="Minimize"></button>
+        <button aria-label="Maximize" id="maximizeButton"></button>
+        <button aria-label="Close" id="closeButton"></button>
+      </div>
+    </div>
+    <div class="window-body">
+      <div class="controls">
+        <div class="clock-container">
+          <span>Reloj del Servidor</span>
+          <div class="analog-clock">
+            <div class="hand hour" id="hourHand"></div>
+            <div class="hand minute" id="minuteHand"></div>
+            <div class="hand second" id="secondHand"></div>
+          </div>
+          <div class="clock-controls">
+            <label for="hourInput">Hora:</label>
+            <input type="number" id="hourInput" min="0" max="23" value="0" style="width: 50px;">
+            <label for="minuteInput">Minuto:</label>
+            <input type="number" id="minuteInput" min="0" max="59" value="0" style="width: 50px;">
+            <button id="setManualTimeButton">Ajustar Hora</button>
+          </div>
+        </div>
+        <fieldset>
+          <legend>Controles</legend>
+          <button id="backButton" disabled>Atras</button>
+          <button id="syncClockButton" disabled>Sincronizar Reloj</button>
+          <button id="soundToggle">?? Sonido ON</button>
+        </fieldset>
+      </div>
+      <div class="file-explorer">
+        <div class="explorer-header">
+          <label for="path">Ruta:</label>
+          <input type="text" class="explorer-path" id="pathDisplay" value="C:\Simrail_online" readonly>
+        </div>
+        <div class="explorer-content" id="explorerContent">
+        </div>
+      </div>
+    </div>
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <p>Cargando datos...</p>
+        <img src="https://win98icons.alexmeub.com/icons/png/loading-2.png" alt="Loading" width="32" height="32" style="image-rendering: pixelated;" />
+    </div>
+  </div>
+
+  <div id="notificationToast" class="notification-toast">
+    ?? Tren aproximandose a la estacion
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+      // --- Variables de la UI ---
+      const desktop = document.querySelector('.desktop');
+      const simrailAppIcon = document.getElementById('simrailAppIcon');
+      const simrailAppWindow = document.getElementById('simrailAppWindow');
+      const closeButton = document.getElementById('closeButton');
+      const maximizeButton = document.getElementById('maximizeButton');
+      const backButton = document.getElementById('backButton');
+      const explorerContent = document.getElementById('explorerContent');
+      const pathDisplay = document.getElementById('pathDisplay');
+      const loadingOverlay = document.getElementById('loadingOverlay');
+      const startButton = document.getElementById('startButton');
+      const startMenu = document.getElementById('startMenu');
+      const theme98Button = document.getElementById('theme98');
+      const themeXPButton = document.getElementById('themeXP');
+      const soundToggle = document.getElementById('soundToggle');
+      const notificationToast = document.getElementById('notificationToast');
+      const hourHand = document.getElementById('hourHand');
+      const minuteHand = document.getElementById('minuteHand');
+      const secondHand = document.getElementById('secondHand');
+      const hourInput = document.getElementById('hourInput');
+      const minuteInput = document.getElementById('minuteInput');
+      const setManualTimeButton = document.getElementById('setManualTimeButton');
+      const syncClockButton = document.getElementById('syncClockButton');
+      const taskbarTime = document.getElementById('taskbarTime');
+
+      // --- NUEVAS CONSTANTES DE LA API OFICIAL ---
+      const API_BASE_URL = 'https://api.simrail.eu/api';
+      const API_KEY = '5c4176551b04403e8b4e7b8f9a9c7b4e'; // Clave pública de la documentación
+
+      const API_URLS = {
+        servers: `${API_BASE_URL}/servers?key=${API_KEY}`,
+        stations: `${API_BASE_URL}/stations?key=${API_KEY}`,
+        trains: (serverCode, stationId) => `${API_BASE_URL}/trains?serverCode=${serverCode}&stationId=${stationId}&key=${API_KEY}`
+      };
+
+      // Mantenemos esto para la lógica de clasificación, aunque los datos vengan de otro sitio
+      const TRAIN_TYPES = {
+        'ROJ': { name: 'Regionale Osobowy Jednotka', type: 'passenger', description: 'Tren regional de pasajeros' },
+        'RPJ': { name: 'RegioPlus', type: 'passenger', description: 'Tren regional de mayor categoría' },
+        'ZXE': { name: 'Zespól Trakcyjny Elektryczny', type: 'freight', description: 'Tren de carga eléctrico' },
+        'TDE': { name: 'Tabor Dieslowski Elektryczny', type: 'freight', description: 'Material diésel-eléctrico de carga' },
+        'TME': { name: 'Towarowy Mieszany Elektryczny', type: 'freight', description: 'Tren de mercancías mixto' },
+        'TRE': { name: 'Towarowy Rózne Elektryczny', type: 'freight', description: 'Tren de mercancías varias' },
+        'TKE': { name: 'Towarowy Kolejowy Elektryczny', type: 'freight', description: 'Tren de carga ferroviario' },
+        'TSE': { name: 'Towarowy Specjalny Elektryczny', type: 'freight', description: 'Tren de carga especial' },
+        'MPE': { name: 'Motorowy Pociag Elektryczny', type: 'passenger', description: 'Tren motor eléctrico' },
+        'MHE': { name: 'Motorowy Pociag EIC', type: 'passenger', description: 'Tren rápido (EIC)' },
+        'MOJ': { name: 'Motorowy Osobowy Jednotka', type: 'passenger', description: 'Unidad de pasajeros eléctrica' },
+        'IC': { name: 'InterCity', type: 'passenger', description: 'InterCity' },
+        'EIC': { name: 'Express InterCity', type: 'passenger', description: 'Express InterCity' },
+        'EIP': { name: 'Express InterCity Premium', type: 'passenger', description: 'Express InterCity Premium (Pendolino)' },
+        'ECE': { name: 'EuroCity Express', type: 'passenger', description: 'EuroCity Express' },
+        'TLK': { name: 'Twoje Linie Kolejowe', type: 'passenger', description: 'Tus Líneas Ferroviarias' },
+        'REG': { name: 'Regional', type: 'passenger', description: 'Tren Regional' },
+        'R': { name: 'Regional', type: 'passenger', description: 'Tren Regional' },
+        'RAJ': { name: 'Regio Autonomiczny Jednostka', type: 'passenger', description: 'Tren regional' },
+        'PWJ': { name: 'Pociag Wlasny Jednostka', type: 'passenger', description: 'Tren de servicio' },
+        'LTE': { name: 'Lekki Towarowy Elektryczny', type: 'freight', description: 'Tren de carga ligero' },
+        'IR': { name: 'InterRegio', type: 'passenger', description: 'Tren InterRegional' }
+      };
+      
+      let appState = {
+		currentView: 'servers',
+		currentServer: null,
+		currentStation: null,
+		serversData: [],
+        masterStationList: [], // <-- NUEVO: Lista maestra de todas las estaciones
+		trainsData: [],
+		serverTime: new Date(),
+		clockInterval: null,
+		realtimeInterval: null,
+		history: [],
+		soundEnabled: true,
+		notifiedTrains: new Set(),
+		lastTrainCount: 0,
+        filters: {
+            hideOffline: false,
+            hideDeparted: false,
+            radius: 'none'
+        }
+      };
+      
+      function playTrainApproachSound() {
+        if (!appState.soundEnabled) return;
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const frequencies = [220, 330, 440];
+        const duration = 0.8;
+        frequencies.forEach((freq, index) => {
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          oscillator.frequency.setValueAtTime(freq, audioContext.currentTime + index * 0.1);
+          gainNode.gain.setValueAtTime(0.1, audioContext.currentTime + index * 0.1);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+          oscillator.start(audioContext.currentTime + index * 0.1);
+          oscillator.stop(audioContext.currentTime + duration);
+        });
+        showNotification('?? ¡Tren aproximándose a la estación!');
+      }
+
+      function showNotification(message) {
+        notificationToast.textContent = message;
+        notificationToast.classList.add('show');
+        setTimeout(() => {
+          notificationToast.classList.remove('show');
+        }, 3000);
+      }
+      
+      async function fetchData(url) {
+        showLoading(true);
+        try {
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+          const data = await response.json();
+          // La nueva API devuelve { "data": [...] }, así que extraemos el array.
+          return data.data || data; 
+        } catch (error) {
+          console.error('? Error fetching data:', error);
+          throw error;
+        } finally {
+          showLoading(false);
+        }
+      }
+
+      async function loadServers() {
+        const servers = await fetchData(API_URLS.servers);
+        appState.serversData = servers.filter(s => s.isActive);
+      }
+
+      // --- NUEVA FUNCIÓN para cargar la lista maestra de estaciones ---
+      async function loadMasterStationList() {
+        try {
+            appState.masterStationList = await fetchData(API_URLS.stations);
+            console.log(`? Master station list loaded: ${appState.masterStationList.length} stations`);
+        } catch(error) {
+            console.error("Failed to load master station list", error);
+            appState.masterStationList = [];
+        }
+      }
+
+      // --- MODIFICADA para usar stationId y nueva estructura de datos ---
+      async function loadTrains(serverCode, stationId) {
+        try {
+          const response = await fetchData(API_URLS.trains(serverCode, stationId));
+          // La nueva API devuelve un objeto con una propiedad "trains".
+          const trains = response.trains || []; 
+          if (Array.isArray(trains)) {
+            appState.trainsData = trains;
+            const activeTrainIds = new Set(trains.filter(t => t.speedKmh > 5).map(t => t.id));
+            activeTrainIds.forEach(trainId => {
+              if (!appState.notifiedTrains.has(trainId)) {
+                playTrainApproachSound();
+                appState.notifiedTrains.add(trainId);
+              }
+            });
+          } else {
+            appState.trainsData = [];
+          }
+        } catch (error) {
+          console.error(`Error loading trains for ${serverCode}/${stationId}:`, error);
+          appState.trainsData = [];
+        }
+      }
+
+      function updateClockDisplay() {
+        const now = appState.serverTime;
+        const seconds = now.getSeconds(), minutes = now.getMinutes(), hours = now.getHours();
+        secondHand.style.transform = `translateX(-50%) rotate(${seconds * 6}deg)`;
+        minuteHand.style.transform = `translateX(-50%) rotate(${minutes * 6 + seconds / 10}deg)`;
+        hourHand.style.transform = `translateX(-50%) rotate(${(hours % 12) * 30 + minutes / 2}deg)`;
+        now.setSeconds(now.getSeconds() + 1);
+      }
+      
+      function startClock() {
+        if (appState.clockInterval) clearInterval(appState.clockInterval);
+        appState.clockInterval = setInterval(updateClockDisplay, 1000);
+        updateClockDisplay();
+      }
+      
+      function updateTaskbarTime() {
+        taskbarTime.textContent = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      }
+
+      function startRealtimeUpdates() {
+        if (appState.realtimeInterval) clearInterval(appState.realtimeInterval);
+        appState.realtimeInterval = setInterval(async () => {
+          if (appState.currentView === 'trains') {
+            await loadTrains(appState.currentServer.code, appState.currentStation.id);
+            updateTrainDisplay();
+          }
+        }, 30000);
+      }
+
+      function stopRealtimeUpdates() {
+        if (appState.realtimeInterval) {
+          clearInterval(appState.realtimeInterval);
+          appState.realtimeInterval = null;
+        }
+      }
+
+      function renderServers() {
+        pathDisplay.value = 'C:\\Simrail_online';
+        explorerContent.innerHTML = '';
+        if (appState.serversData.length === 0) {
+          explorerContent.innerHTML = '<div class="error-message">No se encontraron servidores.</div>';
+          return;
+        }
+        appState.serversData.forEach(server => {
+          const el = document.createElement('div');
+          el.className = 'explorer-item';
+          el.innerHTML = `<img src="https://win98icons.alexmeub.com/icons/png/folder_file-2.png" alt="Server"><p>${server.serverName}</p>`;
+          el.addEventListener('click', () => {
+            appState.currentServer = { code: server.serverCode, name: server.serverName };
+            appState.currentView = 'stations';
+            appState.history.push('servers');
+            updateUI();
+          });
+          explorerContent.appendChild(el);
+        });
+        updateBackButton();
+      }
+
+      // --- MODIFICADA para filtrar la lista maestra en lugar de hacer fetch ---
+      function renderStations() {
+        pathDisplay.value = `C:\\Simrail_online\\${appState.currentServer.name}`;
+        explorerContent.innerHTML = '';
+        
+        const serverStations = appState.masterStationList.filter(s => s.serverCode === appState.currentServer.code);
+        const sortedStations = serverStations.sort((a, b) => a.name.localeCompare(b.name));
+
+        sortedStations.forEach(station => {
+          const el = document.createElement('div');
+          el.className = 'explorer-item';
+          el.innerHTML = `<img src="https://win98icons.alexmeub.com/icons/png/text_file-0.png" alt="Station"><p>${station.name}</p><div class="difficulty-badge difficulty-${station.difficultyLevel}">${station.difficultyLevel}</div>`;
+          el.addEventListener('click', () => {
+            appState.currentStation = { name: station.name, prefix: station.prefix, difficulty: station.difficultyLevel, id: station.id }; // Guardamos el ID
+            appState.currentView = 'trains';
+            appState.history.push('stations');
+            appState.notifiedTrains.clear();
+            updateUI();
+          });
+          explorerContent.appendChild(el);
+        });
+        updateBackButton();
+      }
+      
+      // --- MODIFICADA para usar la nueva estructura de datos ---
+      function getTrainStatus(train) {
+        if (typeof train.speedKmh === 'undefined') return 'inactive';
+        const speed = Math.abs(train.speedKmh);
+        if (speed < 1) return 'inactive';
+        // La API oficial no parece tener "DistanceToSignalInFront", así que simplificamos la lógica de "approaching"
+        if (train.distance > 0 && train.distance < 15000 && speed > 5) return 'approaching';
+        return 'active';
+      }
+      
+      // No necesita cambios, ya que se basa en el nombre del tren que seguimos teniendo
+      function getTrainTypeInfo(trainType) {
+        if (!trainType) return { name: 'N/A', type: 'unknown', description: 'Tipo desconocido' };
+        if (TRAIN_TYPES[trainType]) return TRAIN_TYPES[trainType];
+        for (const [key, value] of Object.entries(TRAIN_TYPES)) {
+          if (trainType.includes(key) || key.includes(trainType)) return value;
+        }
+        return { name: trainType, type: 'unknown', description: 'Tipo desconocido' };
+      }
+      
+      // --- MODIFICADA para usar la nueva estructura de datos ---
+      function updateTrainDisplay() {
+        const trainList = document.querySelector('.train-list');
+        if (!trainList) return;
+      
+        const searchInput = document.querySelector('#trainSearchInput');
+        const filterSelect = document.querySelector('#trainFilterSelect');
+        const searchText = searchInput ? searchInput.value.toLowerCase() : '';
+        const filterValue = filterSelect ? filterSelect.value : 'all';
+        
+        let filteredTrains = appState.trainsData.filter(train => {
+          const trainNumber = (train.trainNo || '').toLowerCase();
+          const trainName = (train.name || '').toLowerCase();
+          if (searchText && !trainNumber.includes(searchText) && !trainName.includes(searchText)) return false;
+
+          if (filterValue !== 'all') {
+            const typeInfo = getTrainTypeInfo(train.name || '');
+            if (filterValue === 'passenger' || filterValue === 'freight') {
+              if (typeInfo.type !== filterValue) return false;
+            } else {
+              if (trainName !== filterValue) return false;
+            }
+          }
+
+          if (appState.filters.hideOffline && getTrainStatus(train) === 'inactive') return false;
+          if (typeof train.distance !== 'undefined' && train.distance !== null) {
+            if (appState.filters.hideDeparted && train.distance < 0) return false;
+            if (appState.filters.radius !== 'none' && Math.abs(train.distance / 1000) > parseInt(appState.filters.radius, 10)) return false;
+          }
+
+          return true;
+        });
+      
+        const trainMap = new Map(Array.from(trainList.children).map(item => [item.dataset.trainId, item]));
+        
+        filteredTrains.forEach(train => {
+          const trainId = train.id;
+          let li = trainMap.get(String(trainId));
+          if (!li) {
+            li = document.createElement('div');
+            li.className = 'train-item';
+            li.dataset.trainId = trainId;
+            trainList.appendChild(li);
+          }
+          trainMap.delete(String(trainId));
+      
+          const status = getTrainStatus(train);
+          const typeInfo = getTrainTypeInfo(train.name || 'Unknown');
+          const currentSpeed = `${Math.round(Math.abs(train.speedKmh))} km/h`;
+          const line = `${train.route.from || '?'} ? ${train.route.to || '?'}`;
+          const distanceInfo = typeof train.distance !== 'undefined' ? `${(train.distance / 1000).toFixed(2)} km` : 'N/A';
+          const statusText = status === 'approaching' ? 'Aproximándose' : status === 'active' ? 'En circulación' : 'Detenido';
+          const driverInfo = train.controller.isPlayer ? `Conductor: ${train.controller.name}` : 'Control: Bot';
+
+          li.innerHTML = `
+            <div class="train-header">
+              <div class="train-number">?? ${train.trainNo}</div>
+              <div class="train-status status-${status}">${statusText}</div>
+            </div>
+            <div class="train-details">
+              <div><span class="train-type-badge">${train.name || 'N/A'}</span> ${typeInfo.description}</div>
+              <div>?? ${driverInfo}</div>
+              <div><strong>Velocidad:</strong> ${currentSpeed} | <strong>Distancia:</strong> ${distanceInfo}</div>
+              <div><strong>Línea:</strong> ${line}</div>
+            </div>
+          `;
+          li.className = `train-item ${status}`;
+        });
+      
+        trainMap.forEach(item => item.remove());
+        if (trainList.children.length === 0) {
+          trainList.innerHTML = `<div class="error-message">No se encontraron trenes para los filtros.</div>`;
+        }
+      }
+
+      function createTrainTypeFilter() {
+        const allTypes = new Set(appState.trainsData.map(t => t.name).filter(Boolean));
+        const passengerTypes = [], freightTypes = [];
+        allTypes.forEach(type => {
+            const info = getTrainTypeInfo(type);
+            if (info.type === 'passenger') passengerTypes.push(type);
+            else if (info.type === 'freight') freightTypes.push(type);
+        });
+        passengerTypes.sort(); freightTypes.sort();
+        return `
+          <option value="all">-- Todos los trenes --</option>
+          <optgroup label="?? Por Categoría">
+            <option value="passenger">Ver todos los de Pasajeros</option>
+            <option value="freight">Ver todos los de Mercancías</option>
+          </optgroup>
+          <optgroup label="?? Pasajeros (Específico)">
+            ${passengerTypes.map(t => `<option value="${t.toLowerCase()}">${t}</option>`).join('')}
+          </optgroup>
+          <optgroup label="?? Mercancías (Específico)">
+            ${freightTypes.map(t => `<option value="${t.toLowerCase()}">${t}</option>`).join('')}
+          </optgroup>
+        `;
+      }
+
+      function renderTrainList() {
+        pathDisplay.value = `C:\\Simrail_online\\${appState.currentServer.name}\\${appState.currentStation.name}.txt`;
+        explorerContent.innerHTML = `
+            <div class="train-list-container">
+                <div class="realtime-controls">
+                    <div class="realtime-indicator"></div>
+                    <span>Actualización en tiempo real activa</span>
+                    <small style="margin-left: auto;">Actualiza cada 30s</small>
+                </div>
+                <div style="background: #e6f3ff; border: 1px solid #b3d9ff; border-radius: 3px; padding: 6px; margin-bottom: 8px; font-size: 11px;">
+                    <strong>?? ${appState.currentStation.name}</strong><br>
+                    <small>Código: ${appState.currentStation.prefix} | Dificultad: ${appState.currentStation.difficulty}/5 | Servidor: ${appState.currentServer.code}</small>
+                </div>
+                <div class="train-search">
+                    <input type="text" id="trainSearchInput" placeholder="Buscar tren o conductor..." />
+                    <select id="trainFilterSelect">${createTrainTypeFilter()}</select>
+                    <button id="refreshTrainsButton">?? Actualizar</button>
+                </div>
+                <fieldset class="advanced-filters">
+                    <legend>Filtros Adicionales</legend>
+                    <div class="filter-controls">
+                        <label><input type="checkbox" id="hideOfflineCheckbox" ${appState.filters.hideOffline ? 'checked' : ''}> Ocultar Inactivos</label>
+                        <label><input type="checkbox" id="hideDepartedCheckbox" ${appState.filters.hideDeparted ? 'checked' : ''}> Ocultar Trenes que ya pasaron</label>
+                        <div class="radius-filter">
+                            <span>Cercanía:</span>
+                            <label><input type="radio" name="radius" value="10" ${appState.filters.radius === '10' ? 'checked' : ''}> 10km</label>
+                            <label><input type="radio" name="radius" value="25" ${appState.filters.radius === '25' ? 'checked' : ''}> 25km</label>
+                            <label><input type="radio" name="radius" value="none" ${appState.filters.radius === 'none' ? 'checked' : ''}> Sin Límite</label>
+                        </div>
+                    </div>
+                </fieldset>
+                <div class="train-list"></div>
+            </div>
+        `;
+
+        document.getElementById('trainSearchInput').addEventListener('input', updateTrainDisplay);
+        document.getElementById('trainFilterSelect').addEventListener('change', updateTrainDisplay);
+        document.getElementById('refreshTrainsButton').addEventListener('click', async () => {
+          await loadTrains(appState.currentServer.code, appState.currentStation.id);
+          document.getElementById('trainFilterSelect').innerHTML = createTrainTypeFilter();
+          updateTrainDisplay();
+        });
+
+        document.getElementById('hideOfflineCheckbox').addEventListener('change', e => { appState.filters.hideOffline = e.target.checked; updateTrainDisplay(); });
+        document.getElementById('hideDepartedCheckbox').addEventListener('change', e => { appState.filters.hideDeparted = e.target.checked; updateTrainDisplay(); });
+        document.querySelectorAll('input[name="radius"]').forEach(radio => {
+            radio.addEventListener('change', e => { appState.filters.radius = e.target.value; updateTrainDisplay(); });
+        });
+
+        updateTrainDisplay();
+        updateBackButton();
+        startRealtimeUpdates();
+      }
+
+      // --- MODIFICADA para reflejar el nuevo flujo ---
+      async function updateUI() {
+        try {
+            if (appState.currentView === 'servers') {
+                await loadServers();
+                renderServers();
+            } else if (appState.currentView === 'stations') {
+                // Ya no se llama a loadStations(), solo se renderiza
+                renderStations();
+            } else if (appState.currentView === 'trains') {
+                await loadTrains(appState.currentServer.code, appState.currentStation.id); // Usamos el ID de la estación
+                renderTrainList();
+            }
+        } catch (error) {
+            explorerContent.innerHTML = `<div class="error-message">Error de conexión: ${error.message}</div>`;
+        }
+      }
+
+      function goBack() {
+        if (appState.history.length > 0) {
+          const previousView = appState.history.pop();
+          appState.currentView = previousView;
+          if (previousView === 'servers') appState.currentServer = null;
+          appState.currentStation = null;
+          updateUI();
+        }
+      }
+      
+      function updateBackButton() {
+        backButton.disabled = appState.history.length === 0;
+      }
+
+      function showLoading(show) {
+        loadingOverlay.style.display = show ? 'flex' : 'none';
+      }
+
+      // --- MODIFICADO para cargar la lista maestra al inicio ---
+      simrailAppIcon.addEventListener('click', async () => {
+        simrailAppWindow.style.display = 'block';
+        appState.serverTime = new Date();
+        appState.currentView = 'servers';
+        appState.history = [];
+        
+        // El paso más importante: cargar las estaciones ANTES de mostrar nada
+        await loadMasterStationList();
+
+        updateUI();
+        startClock();
+      });
+
+      closeButton.addEventListener('click', () => {
+        simrailAppWindow.style.display = 'none';
+        stopRealtimeUpdates();
+        if(appState.clockInterval) clearInterval(appState.clockInterval);
+      });
+
+      soundToggle.addEventListener('click', () => {
+        appState.soundEnabled = !appState.soundEnabled;
+        soundToggle.textContent = appState.soundEnabled ? '?? Sonido ON' : '?? Sonido OFF';
+      });
+      
+      let isDragging = false, offsetX, offsetY;
+      const titleBar = simrailAppWindow.querySelector('.title-bar');
+      titleBar.addEventListener('mousedown', e => {
+        if (simrailAppWindow.classList.contains('maximized')) return;
+        isDragging = true;
+        const rect = simrailAppWindow.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+      });
+      document.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        simrailAppWindow.style.left = `${e.clientX - offsetX}px`;
+        simrailAppWindow.style.top = `${e.clientY - offsetY}px`;
+        simrailAppWindow.style.transform = 'none';
+      });
+      document.addEventListener('mouseup', () => { isDragging = false; });
+
+      let originalRect;
+      maximizeButton.addEventListener('click', () => {
+          if (simrailAppWindow.classList.contains('maximized')) {
+              simrailAppWindow.classList.remove('maximized');
+              if (originalRect) {
+                simrailAppWindow.style.top = originalRect.top;
+                simrailAppWindow.style.left = originalRect.left;
+                simrailAppWindow.style.width = originalRect.width;
+                simrailAppWindow.style.height = originalRect.height;
+              }
+          } else {
+              originalRect = { top: simrailAppWindow.style.top, left: simrailAppWindow.style.left, width: simrailAppWindow.style.width, height: simrailAppWindow.style.height };
+              simrailAppWindow.classList.add('maximized');
+              simrailAppWindow.style.top = '0';
+              simrailAppWindow.style.left = '0';
+              simrailAppWindow.style.width = '100vw';
+              simrailAppWindow.style.height = `calc(100vh - ${document.querySelector('.taskbar').offsetHeight}px)`;
+          }
+      });
+      
+      startButton.addEventListener('click', e => { e.stopPropagation(); startMenu.style.display = startMenu.style.display === 'flex' ? 'none' : 'flex'; });
+      document.addEventListener('click', () => { startMenu.style.display = 'none'; });
+      startMenu.addEventListener('click', e => e.stopPropagation());
+
+      theme98Button.addEventListener('click', () => document.body.classList.remove('xp-theme'));
+      themeXPButton.addEventListener('click', () => document.body.classList.add('xp-theme'));
+      
+      setManualTimeButton.addEventListener('click', () => {
+        appState.serverTime.setHours(parseInt(hourInput.value, 10) || 0);
+        appState.serverTime.setMinutes(parseInt(minuteInput.value, 10) || 0);
+        appState.serverTime.setSeconds(0);
+        startClock();
+      });
+
+      syncClockButton.addEventListener('click', () => { appState.serverTime = new Date(); startClock(); });
+      backButton.addEventListener('click', goBack);
+      setInterval(updateTaskbarTime, 1000);
+      updateTaskbarTime();
+
+      window.addEventListener('beforeunload', () => {
+        stopRealtimeUpdates();
+        if (appState.clockInterval) clearInterval(appState.clockInterval);
+      });
+    });
+  </script>
+</body>
+</html>
