@@ -855,9 +855,10 @@
       const syncClockButton = document.getElementById('syncClockButton');
       const taskbarTime = document.getElementById('taskbarTime');
 
-      // --- NUEVAS CONSTANTES DE LA API OFICIAL ---
-      const API_BASE_URL = 'https://api.simrail.eu/api';
-      const API_KEY = '5c4176551b04403e8b4e7b8f9a9c7b4e'; // Clave pública de la documentación
+            // --- CONSTANTES DE LA API OFICIAL CORREGIDAS CON PROXY ---
+      // Usamos un proxy para evitar el bloqueo de CORS y corregimos la URL base
+      const API_BASE_URL = 'https://corsproxy.io/?https://api.simrail.eu'; 
+      const API_KEY = '5c4176551b04403e8b4e7b8f9a9c7b4e';
 
       const API_URLS = {
         servers: `${API_BASE_URL}/servers?key=${API_KEY}`,
@@ -1384,3 +1385,4 @@
 </body>
 
 </html>
+
