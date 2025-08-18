@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -391,10 +391,6 @@
         border: 1px solid #aaa;
         background-color: #ddeeff;
     }
-
-    .explorer-content.list-view {
-      display: block;
-    }
     
     .explorer-item {
       display: flex;
@@ -411,13 +407,6 @@
       width: 100px;
     }
 
-    .explorer-item.list-view {
-      flex-direction: row;
-      gap: 8px;
-      text-align: left;
-      width: 100%;
-    }
-
     .explorer-item:hover {
       background-color: #000080;
       color: white;
@@ -429,11 +418,6 @@
 
     body.xp-theme .explorer-item:hover {
         background-color: #4a75d7;
-        color: white;
-    }
-    
-    body.xp-theme .explorer-item:active {
-        border: 1px dashed #4a75d7;
         color: white;
     }
     
@@ -451,11 +435,6 @@
       overflow: hidden;
       text-overflow: ellipsis;
       max-width: 100%;
-    }
-
-    .explorer-item input {
-      width: 80%;
-      text-align: center;
     }
 
     .train-list-container {
@@ -576,30 +555,6 @@
     }
     
     /* Utilidades de la ventana */
-    .maximize-button {
-      display: inline-block;
-      width: 14px;
-      height: 14px;
-      border: 1px solid black;
-      margin-left: 2px;
-      position: relative;
-    }
-    .maximize-button::before {
-      content: '';
-      position: absolute;
-      width: 8px;
-      height: 8px;
-      border: 1px solid black;
-      top: 2px;
-      left: 2px;
-    }
-
-    body.xp-theme .title-bar-controls button {
-        background: linear-gradient(to top, #c4c4c4, #e8e8e8);
-        border: 1px solid #666;
-        border-radius: 2px;
-    }
-    
     .close-button {
       font-weight: bold;
       color: white;
@@ -855,10 +810,9 @@
       const syncClockButton = document.getElementById('syncClockButton');
       const taskbarTime = document.getElementById('taskbarTime');
 
-            // --- CONSTANTES DE LA API OFICIAL CORREGIDAS CON PROXY ---
-      // Usamos un proxy para evitar el bloqueo de CORS y corregimos la URL base
-      const API_BASE_URL = 'https://corsproxy.io/?https://api.simrail.eu'; 
-      const API_KEY = '5c4176551b04403e8b4e7b8f9a9c7b4e';
+      // --- LÍNEA CORREGIDA ---
+      const API_BASE_URL = 'https://corsproxy.io/?https://api.simrail.eu:8093'; 
+      const API_KEY = '5c4176551b04403e8b4e7b8f9a9c7b4e'; // Esta es una clave pública de ejemplo, podría ser necesario cambiarla
 
       const API_URLS = {
         servers: `${API_BASE_URL}/servers?key=${API_KEY}`,
@@ -866,7 +820,6 @@
         trains: (serverCode, stationId) => `${API_BASE_URL}/trains?serverCode=${serverCode}&stationId=${stationId}&key=${API_KEY}`
       };
 
-      // Mantenemos esto para la lógica de clasificación, aunque los datos vengan de otro sitio
       const TRAIN_TYPES = {
         'ROJ': { name: 'Regionale Osobowy Jednotka', type: 'passenger', description: 'Tren regional de pasajeros' },
         'RPJ': { name: 'RegioPlus', type: 'passenger', description: 'Tren regional de mayor categoría' },
@@ -897,7 +850,7 @@
 		currentServer: null,
 		currentStation: null,
 		serversData: [],
-        masterStationList: [], // <-- NUEVO: Lista maestra de todas las estaciones
+        masterStationList: [], // Lista maestra de todas las estaciones
 		trainsData: [],
 		serverTime: new Date(),
 		clockInterval: null,
@@ -940,21 +893,18 @@
         }, 3000);
       }
       
-    async function fetchData(url) {
+      async function fetchData(url) {
         showLoading(true);
         try {
           const response = await fetch(url);
           if (!response.ok) {
-            // Si la respuesta no es OK, lanzamos un error con el status para verlo en la consola
             throw new Error(`HTTP error! Status: ${response.status}`);
           }
           const data = await response.json();
-          // CORRECCIÓN: La API oficial SIEMPRE envuelve la respuesta en un objeto "data".
-          // Si el objeto "data" no existe, es que la respuesta fue un error o inesperada.
+          // La API oficial envuelve la respuesta en un objeto "data"
           if ('data' in data) {
               return data.data;
           }
-          // Si no hay "data", devolvemos el objeto completo para poder depurarlo si es un error.
           return data; 
         } catch (error) {
           console.error('? Error fetching data:', error);
@@ -969,7 +919,6 @@
         appState.serversData = servers.filter(s => s.isActive);
       }
 
-      // --- NUEVA FUNCIÓN para cargar la lista maestra de estaciones ---
       async function loadMasterStationList() {
         try {
             appState.masterStationList = await fetchData(API_URLS.stations);
@@ -980,11 +929,9 @@
         }
       }
 
-      // --- MODIFICADA para usar stationId y nueva estructura de datos ---
       async function loadTrains(serverCode, stationId) {
         try {
           const response = await fetchData(API_URLS.trains(serverCode, stationId));
-          // La nueva API devuelve un objeto con una propiedad "trains".
           const trains = response.trains || []; 
           if (Array.isArray(trains)) {
             appState.trainsData = trains;
@@ -1026,7 +973,7 @@
       function startRealtimeUpdates() {
         if (appState.realtimeInterval) clearInterval(appState.realtimeInterval);
         appState.realtimeInterval = setInterval(async () => {
-          if (appState.currentView === 'trains') {
+          if (appState.currentView === 'trains' && appState.currentServer && appState.currentStation) {
             await loadTrains(appState.currentServer.code, appState.currentStation.id);
             updateTrainDisplay();
           }
@@ -1062,7 +1009,6 @@
         updateBackButton();
       }
 
-      // --- MODIFICADA para filtrar la lista maestra en lugar de hacer fetch ---
       function renderStations() {
         pathDisplay.value = `C:\\Simrail_online\\${appState.currentServer.name}`;
         explorerContent.innerHTML = '';
@@ -1075,7 +1021,7 @@
           el.className = 'explorer-item';
           el.innerHTML = `<img src="https://win98icons.alexmeub.com/icons/png/text_file-0.png" alt="Station"><p>${station.name}</p><div class="difficulty-badge difficulty-${station.difficultyLevel}">${station.difficultyLevel}</div>`;
           el.addEventListener('click', () => {
-            appState.currentStation = { name: station.name, prefix: station.prefix, difficulty: station.difficultyLevel, id: station.id }; // Guardamos el ID
+            appState.currentStation = { name: station.name, prefix: station.prefix, difficulty: station.difficultyLevel, id: station.id };
             appState.currentView = 'trains';
             appState.history.push('stations');
             appState.notifiedTrains.clear();
@@ -1086,17 +1032,14 @@
         updateBackButton();
       }
       
-      // --- MODIFICADA para usar la nueva estructura de datos ---
       function getTrainStatus(train) {
         if (typeof train.speedKmh === 'undefined') return 'inactive';
         const speed = Math.abs(train.speedKmh);
         if (speed < 1) return 'inactive';
-        // La API oficial no parece tener "DistanceToSignalInFront", así que simplificamos la lógica de "approaching"
         if (train.distance > 0 && train.distance < 15000 && speed > 5) return 'approaching';
         return 'active';
       }
       
-      // No necesita cambios, ya que se basa en el nombre del tren que seguimos teniendo
       function getTrainTypeInfo(trainType) {
         if (!trainType) return { name: 'N/A', type: 'unknown', description: 'Tipo desconocido' };
         if (TRAIN_TYPES[trainType]) return TRAIN_TYPES[trainType];
@@ -1106,7 +1049,6 @@
         return { name: trainType, type: 'unknown', description: 'Tipo desconocido' };
       }
       
-      // --- MODIFICADA para usar la nueva estructura de datos ---
       function updateTrainDisplay() {
         const trainList = document.querySelector('.train-list');
         if (!trainList) return;
@@ -1259,17 +1201,15 @@
         startRealtimeUpdates();
       }
 
-      // --- MODIFICADA para reflejar el nuevo flujo ---
       async function updateUI() {
         try {
             if (appState.currentView === 'servers') {
                 await loadServers();
                 renderServers();
             } else if (appState.currentView === 'stations') {
-                // Ya no se llama a loadStations(), solo se renderiza
                 renderStations();
             } else if (appState.currentView === 'trains') {
-                await loadTrains(appState.currentServer.code, appState.currentStation.id); // Usamos el ID de la estación
+                await loadTrains(appState.currentServer.code, appState.currentStation.id);
                 renderTrainList();
             }
         } catch (error) {
@@ -1295,14 +1235,12 @@
         loadingOverlay.style.display = show ? 'flex' : 'none';
       }
 
-      // --- MODIFICADO para cargar la lista maestra al inicio ---
       simrailAppIcon.addEventListener('click', async () => {
         simrailAppWindow.style.display = 'block';
         appState.serverTime = new Date();
         appState.currentView = 'servers';
         appState.history = [];
         
-        // El paso más importante: cargar las estaciones ANTES de mostrar nada
         await loadMasterStationList();
 
         updateUI();
@@ -1383,6 +1321,4 @@
     });
   </script>
 </body>
-
 </html>
-
