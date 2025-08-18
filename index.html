@@ -391,6 +391,10 @@
         border: 1px solid #aaa;
         background-color: #ddeeff;
     }
+
+    .explorer-content.list-view {
+      display: block;
+    }
     
     .explorer-item {
       display: flex;
@@ -407,6 +411,13 @@
       width: 100px;
     }
 
+    .explorer-item.list-view {
+      flex-direction: row;
+      gap: 8px;
+      text-align: left;
+      width: 100%;
+    }
+
     .explorer-item:hover {
       background-color: #000080;
       color: white;
@@ -418,6 +429,11 @@
 
     body.xp-theme .explorer-item:hover {
         background-color: #4a75d7;
+        color: white;
+    }
+    
+    body.xp-theme .explorer-item:active {
+        border: 1px dashed #4a75d7;
         color: white;
     }
     
@@ -435,6 +451,11 @@
       overflow: hidden;
       text-overflow: ellipsis;
       max-width: 100%;
+    }
+
+    .explorer-item input {
+      width: 80%;
+      text-align: center;
     }
 
     .train-list-container {
@@ -555,6 +576,30 @@
     }
     
     /* Utilidades de la ventana */
+    .maximize-button {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 1px solid black;
+      margin-left: 2px;
+      position: relative;
+    }
+    .maximize-button::before {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border: 1px solid black;
+      top: 2px;
+      left: 2px;
+    }
+
+    body.xp-theme .title-bar-controls button {
+        background: linear-gradient(to top, #c4c4c4, #e8e8e8);
+        border: 1px solid #666;
+        border-radius: 2px;
+    }
+    
     .close-button {
       font-weight: bold;
       color: white;
@@ -760,7 +805,7 @@
           <legend>Controles</legend>
           <button id="backButton" disabled>Atras</button>
           <button id="syncClockButton" disabled>Sincronizar Reloj</button>
-          <button id="soundToggle">?? Sonido ON</button>
+          <button id="soundToggle">🔊 Sonido ON</button>
         </fieldset>
       </div>
       <div class="file-explorer">
@@ -779,7 +824,7 @@
   </div>
 
   <div id="notificationToast" class="notification-toast">
-    ?? Tren aproximandose a la estacion
+    🚂 Tren aproximandose a la estacion
   </div>
 
   <script>
@@ -810,16 +855,17 @@
       const syncClockButton = document.getElementById('syncClockButton');
       const taskbarTime = document.getElementById('taskbarTime');
 
-      // --- LÍNEA CORREGIDA ---
-      const API_BASE_URL = 'https://corsproxy.io/?https://api.simrail.eu:8093'; 
-      const API_KEY = '5c4176551b04403e8b4e7b8f9a9c7b4e'; // Esta es una clave pública de ejemplo, podría ser necesario cambiarla
-
+      // CORREGIDAS LAS URLS DE LA API - Usamos las APIs no oficiales que funcionan
       const API_URLS = {
-        servers: `${API_BASE_URL}/servers?key=${API_KEY}`,
-        stations: `${API_BASE_URL}/stations?key=${API_KEY}`,
-        trains: (serverCode, stationId) => `${API_BASE_URL}/trains?serverCode=${serverCode}&stationId=${stationId}&key=${API_KEY}`
+        // API de la comunidad para servidores
+        servers: 'https://api.simrail.app/servers-open',
+        // API para horarios de estación (usando la staging API mencionada en la wiki)
+        stations: (serverCode) => `https://panel.simrail.eu:8084/stations-open?serverCode=${serverCode}`,
+        // API para trenes en tiempo real
+        trains: (serverCode) => `https://panel.simrail.eu:8084/trains-open?serverCode=${serverCode}`
       };
 
+      // Mantenemos esto para la lógica de clasificación, aunque los datos vengan de otro sitio
       const TRAIN_TYPES = {
         'ROJ': { name: 'Regionale Osobowy Jednotka', type: 'passenger', description: 'Tren regional de pasajeros' },
         'RPJ': { name: 'RegioPlus', type: 'passenger', description: 'Tren regional de mayor categoría' },
@@ -846,19 +892,19 @@
       };
       
       let appState = {
-		currentView: 'servers',
-		currentServer: null,
-		currentStation: null,
-		serversData: [],
-        masterStationList: [], // Lista maestra de todas las estaciones
-		trainsData: [],
-		serverTime: new Date(),
-		clockInterval: null,
-		realtimeInterval: null,
-		history: [],
-		soundEnabled: true,
-		notifiedTrains: new Set(),
-		lastTrainCount: 0,
+        currentView: 'servers',
+        currentServer: null,
+        currentStation: null,
+        serversData: [],
+        stationsData: [],
+        trainsData: [],
+        serverTime: new Date(),
+        clockInterval: null,
+        realtimeInterval: null,
+        history: [],
+        soundEnabled: true,
+        notifiedTrains: new Set(),
+        lastTrainCount: 0,
         filters: {
             hideOffline: false,
             hideDeparted: false,
@@ -868,21 +914,25 @@
       
       function playTrainApproachSound() {
         if (!appState.soundEnabled) return;
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const frequencies = [220, 330, 440];
-        const duration = 0.8;
-        frequencies.forEach((freq, index) => {
-          const oscillator = audioContext.createOscillator();
-          const gainNode = audioContext.createGain();
-          oscillator.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-          oscillator.frequency.setValueAtTime(freq, audioContext.currentTime + index * 0.1);
-          gainNode.gain.setValueAtTime(0.1, audioContext.currentTime + index * 0.1);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-          oscillator.start(audioContext.currentTime + index * 0.1);
-          oscillator.stop(audioContext.currentTime + duration);
-        });
-        showNotification('?? ¡Tren aproximándose a la estación!');
+        try {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const frequencies = [220, 330, 440];
+          const duration = 0.8;
+          frequencies.forEach((freq, index) => {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.frequency.setValueAtTime(freq, audioContext.currentTime + index * 0.1);
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime + index * 0.1);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            oscillator.start(audioContext.currentTime + index * 0.1);
+            oscillator.stop(audioContext.currentTime + duration);
+          });
+          showNotification('🚂 ¡Tren aproximándose a la estación!');
+        } catch (error) {
+          console.warn('Audio context not supported');
+        }
       }
 
       function showNotification(message) {
@@ -896,18 +946,15 @@
       async function fetchData(url) {
         showLoading(true);
         try {
+          console.log('Fetching:', url);
           const response = await fetch(url);
           if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
           const data = await response.json();
-          // La API oficial envuelve la respuesta en un objeto "data"
-          if ('data' in data) {
-              return data.data;
-          }
-          return data; 
+          return data;
         } catch (error) {
-          console.error('? Error fetching data:', error);
+          console.error('Error fetching data:', error);
           throw error;
         } finally {
           showLoading(false);
@@ -915,38 +962,46 @@
       }
 
       async function loadServers() {
-        const servers = await fetchData(API_URLS.servers);
-        appState.serversData = servers.filter(s => s.isActive);
-      }
-
-      async function loadMasterStationList() {
         try {
-            appState.masterStationList = await fetchData(API_URLS.stations);
-            console.log(`? Master station list loaded: ${appState.masterStationList.length} stations`);
-        } catch(error) {
-            console.error("Failed to load master station list", error);
-            appState.masterStationList = [];
+          const servers = await fetchData(API_URLS.servers);
+          // La API devuelve un array directamente
+          appState.serversData = Array.isArray(servers) ? servers.filter(s => s.IsActive !== false) : [];
+          console.log('Loaded servers:', appState.serversData.length);
+        } catch (error) {
+          console.error('Error loading servers:', error);
+          appState.serversData = [];
         }
       }
 
-      async function loadTrains(serverCode, stationId) {
+      async function loadStations(serverCode) {
         try {
-          const response = await fetchData(API_URLS.trains(serverCode, stationId));
-          const trains = response.trains || []; 
-          if (Array.isArray(trains)) {
-            appState.trainsData = trains;
-            const activeTrainIds = new Set(trains.filter(t => t.speedKmh > 5).map(t => t.id));
-            activeTrainIds.forEach(trainId => {
-              if (!appState.notifiedTrains.has(trainId)) {
-                playTrainApproachSound();
-                appState.notifiedTrains.add(trainId);
-              }
-            });
-          } else {
-            appState.trainsData = [];
-          }
+          const stations = await fetchData(API_URLS.stations(serverCode));
+          appState.stationsData = Array.isArray(stations) ? stations : [];
+          console.log('Loaded stations for', serverCode, ':', appState.stationsData.length);
         } catch (error) {
-          console.error(`Error loading trains for ${serverCode}/${stationId}:`, error);
+          console.error('Error loading stations:', error);
+          appState.stationsData = [];
+        }
+      }
+
+      async function loadTrains(serverCode) {
+        try {
+          const trains = await fetchData(API_URLS.trains(serverCode));
+          const trainArray = Array.isArray(trains) ? trains : [];
+          appState.trainsData = trainArray;
+          
+          // Detectar trenes en movimiento para notificaciones
+          const activeTrainIds = new Set(trainArray.filter(t => (t.Velocity || 0) > 5).map(t => t.TrainNoLocal));
+          activeTrainIds.forEach(trainId => {
+            if (!appState.notifiedTrains.has(trainId)) {
+              playTrainApproachSound();
+              appState.notifiedTrains.add(trainId);
+            }
+          });
+          
+          console.log('Loaded trains for', serverCode, ':', appState.trainsData.length);
+        } catch (error) {
+          console.error('Error loading trains:', error);
           appState.trainsData = [];
         }
       }
@@ -973,8 +1028,8 @@
       function startRealtimeUpdates() {
         if (appState.realtimeInterval) clearInterval(appState.realtimeInterval);
         appState.realtimeInterval = setInterval(async () => {
-          if (appState.currentView === 'trains' && appState.currentServer && appState.currentStation) {
-            await loadTrains(appState.currentServer.code, appState.currentStation.id);
+          if (appState.currentView === 'trains' && appState.currentServer) {
+            await loadTrains(appState.currentServer.code);
             updateTrainDisplay();
           }
         }, 30000);
@@ -991,17 +1046,20 @@
         pathDisplay.value = 'C:\\Simrail_online';
         explorerContent.innerHTML = '';
         if (appState.serversData.length === 0) {
-          explorerContent.innerHTML = '<div class="error-message">No se encontraron servidores.</div>';
+          explorerContent.innerHTML = '<div class="error-message">No se encontraron servidores activos.</div>';
           return;
         }
         appState.serversData.forEach(server => {
           const el = document.createElement('div');
           el.className = 'explorer-item';
-          el.innerHTML = `<img src="https://win98icons.alexmeub.com/icons/png/folder_file-2.png" alt="Server"><p>${server.serverName}</p>`;
-          el.addEventListener('click', () => {
-            appState.currentServer = { code: server.serverCode, name: server.serverName };
+          const serverName = server.ServerName || server.id || 'Servidor desconocido';
+          const serverCode = server.ServerCode || server.id;
+          el.innerHTML = `<img src="https://win98icons.alexmeub.com/icons/png/folder_file-2.png" alt="Server"><p>${serverName}</p>`;
+          el.addEventListener('click', async () => {
+            appState.currentServer = { code: serverCode, name: serverName };
             appState.currentView = 'stations';
             appState.history.push('servers');
+            await loadStations(serverCode);
             updateUI();
           });
           explorerContent.appendChild(el);
@@ -1013,15 +1071,34 @@
         pathDisplay.value = `C:\\Simrail_online\\${appState.currentServer.name}`;
         explorerContent.innerHTML = '';
         
-        const serverStations = appState.masterStationList.filter(s => s.serverCode === appState.currentServer.code);
-        const sortedStations = serverStations.sort((a, b) => a.name.localeCompare(b.name));
+        if (appState.stationsData.length === 0) {
+          explorerContent.innerHTML = '<div class="error-message">No se encontraron estaciones para este servidor.</div>';
+          return;
+        }
+
+        const sortedStations = appState.stationsData.sort((a, b) => 
+          (a.Name || a.name || '').localeCompare(b.Name || b.name || '')
+        );
 
         sortedStations.forEach(station => {
           const el = document.createElement('div');
           el.className = 'explorer-item';
-          el.innerHTML = `<img src="https://win98icons.alexmeub.com/icons/png/text_file-0.png" alt="Station"><p>${station.name}</p><div class="difficulty-badge difficulty-${station.difficultyLevel}">${station.difficultyLevel}</div>`;
+          const stationName = station.Name || station.name || 'Estación desconocida';
+          const difficulty = station.DifficultyLevel || station.difficulty || 0;
+          
+          el.innerHTML = `
+            <img src="https://win98icons.alexmeub.com/icons/png/text_file-0.png" alt="Station">
+            <p>${stationName}</p>
+            <div class="difficulty-badge difficulty-${difficulty}">${difficulty}</div>
+          `;
+          
           el.addEventListener('click', () => {
-            appState.currentStation = { name: station.name, prefix: station.prefix, difficulty: station.difficultyLevel, id: station.id };
+            appState.currentStation = { 
+              name: stationName, 
+              prefix: station.Prefix || station.prefix || '', 
+              difficulty: difficulty,
+              id: station.id || station.Name || station.name
+            };
             appState.currentView = 'trains';
             appState.history.push('stations');
             appState.notifiedTrains.clear();
@@ -1033,10 +1110,9 @@
       }
       
       function getTrainStatus(train) {
-        if (typeof train.speedKmh === 'undefined') return 'inactive';
-        const speed = Math.abs(train.speedKmh);
-        if (speed < 1) return 'inactive';
-        if (train.distance > 0 && train.distance < 15000 && speed > 5) return 'approaching';
+        const velocity = Math.abs(train.Velocity || train.velocity || 0);
+        if (velocity < 1) return 'inactive';
+        if (velocity > 5 && (train.DistanceToSignalInFront || 0) < 15000) return 'approaching';
         return 'active';
       }
       
@@ -1059,32 +1135,29 @@
         const filterValue = filterSelect ? filterSelect.value : 'all';
         
         let filteredTrains = appState.trainsData.filter(train => {
-          const trainNumber = (train.trainNo || '').toLowerCase();
-          const trainName = (train.name || '').toLowerCase();
-          if (searchText && !trainNumber.includes(searchText) && !trainName.includes(searchText)) return false;
+          const trainNumber = (train.TrainNoLocal || train.trainNo || '').toLowerCase();
+          const driverName = (train.Vehicles?.[0]?.DriverName || '').toLowerCase();
+          if (searchText && !trainNumber.includes(searchText) && !driverName.includes(searchText)) return false;
 
           if (filterValue !== 'all') {
-            const typeInfo = getTrainTypeInfo(train.name || '');
+            const trainType = train.TrainName || train.name || '';
+            const typeInfo = getTrainTypeInfo(trainType);
             if (filterValue === 'passenger' || filterValue === 'freight') {
               if (typeInfo.type !== filterValue) return false;
             } else {
-              if (trainName !== filterValue) return false;
+              if (trainType.toLowerCase() !== filterValue) return false;
             }
           }
 
           if (appState.filters.hideOffline && getTrainStatus(train) === 'inactive') return false;
-          if (typeof train.distance !== 'undefined' && train.distance !== null) {
-            if (appState.filters.hideDeparted && train.distance < 0) return false;
-            if (appState.filters.radius !== 'none' && Math.abs(train.distance / 1000) > parseInt(appState.filters.radius, 10)) return false;
-          }
-
+          
           return true;
         });
       
         const trainMap = new Map(Array.from(trainList.children).map(item => [item.dataset.trainId, item]));
         
         filteredTrains.forEach(train => {
-          const trainId = train.id;
+          const trainId = train.TrainNoLocal || train.id || Math.random();
           let li = trainMap.get(String(trainId));
           if (!li) {
             li = document.createElement('div');
@@ -1095,23 +1168,26 @@
           trainMap.delete(String(trainId));
       
           const status = getTrainStatus(train);
-          const typeInfo = getTrainTypeInfo(train.name || 'Unknown');
-          const currentSpeed = `${Math.round(Math.abs(train.speedKmh))} km/h`;
-          const line = `${train.route.from || '?'} ? ${train.route.to || '?'}`;
-          const distanceInfo = typeof train.distance !== 'undefined' ? `${(train.distance / 1000).toFixed(2)} km` : 'N/A';
-          const statusText = status === 'approaching' ? 'Aproximándose' : status === 'active' ? 'En circulación' : 'Detenido';
-          const driverInfo = train.controller.isPlayer ? `Conductor: ${train.controller.name}` : 'Control: Bot';
+          const trainType = train.TrainName || train.name || 'Unknown';
+          const typeInfo = getTrainTypeInfo(trainType);
+          const currentSpeed = `${Math.round(Math.abs(train.Velocity || 0))} km/h`;
+          const driver = train.Vehicles?.[0]?.DriverName || 'Bot';
+          const isPlayer = train.Vehicles?.[0]?.DriverType === 'user' || driver !== 'Bot';
+          const driverInfo = isPlayer ? `Conductor: ${driver}` : 'Control: Bot';
+
+          const statusText = status === 'approaching' ? 'Aproximándose' : 
+                           status === 'active' ? 'En circulación' : 'Detenido';
 
           li.innerHTML = `
             <div class="train-header">
-              <div class="train-number">?? ${train.trainNo}</div>
+              <div class="train-number">🚂 ${train.TrainNoLocal || 'N/A'}</div>
               <div class="train-status status-${status}">${statusText}</div>
             </div>
             <div class="train-details">
-              <div><span class="train-type-badge">${train.name || 'N/A'}</span> ${typeInfo.description}</div>
-              <div>?? ${driverInfo}</div>
-              <div><strong>Velocidad:</strong> ${currentSpeed} | <strong>Distancia:</strong> ${distanceInfo}</div>
-              <div><strong>Línea:</strong> ${line}</div>
+              <div><span class="train-type-badge">${trainType}</span> ${typeInfo.description}</div>
+              <div>👤 ${driverInfo}</div>
+              <div><strong>Velocidad:</strong> ${currentSpeed}</div>
+              <div><strong>Tipo:</strong> ${trainType}</div>
             </div>
           `;
           li.className = `train-item ${status}`;
@@ -1119,12 +1195,12 @@
       
         trainMap.forEach(item => item.remove());
         if (trainList.children.length === 0) {
-          trainList.innerHTML = `<div class="error-message">No se encontraron trenes para los filtros.</div>`;
+          trainList.innerHTML = `<div class="error-message">No se encontraron trenes activos.</div>`;
         }
       }
 
       function createTrainTypeFilter() {
-        const allTypes = new Set(appState.trainsData.map(t => t.name).filter(Boolean));
+        const allTypes = new Set(appState.trainsData.map(t => t.TrainName || t.name).filter(Boolean));
         const passengerTypes = [], freightTypes = [];
         allTypes.forEach(type => {
             const info = getTrainTypeInfo(type);
@@ -1134,14 +1210,14 @@
         passengerTypes.sort(); freightTypes.sort();
         return `
           <option value="all">-- Todos los trenes --</option>
-          <optgroup label="?? Por Categoría">
+          <optgroup label="🚄 Por Categoría">
             <option value="passenger">Ver todos los de Pasajeros</option>
             <option value="freight">Ver todos los de Mercancías</option>
           </optgroup>
-          <optgroup label="?? Pasajeros (Específico)">
+          <optgroup label="🚄 Pasajeros (Específico)">
             ${passengerTypes.map(t => `<option value="${t.toLowerCase()}">${t}</option>`).join('')}
           </optgroup>
-          <optgroup label="?? Mercancías (Específico)">
+          <optgroup label="🚛 Mercancías (Específico)">
             ${freightTypes.map(t => `<option value="${t.toLowerCase()}">${t}</option>`).join('')}
           </optgroup>
         `;
@@ -1157,25 +1233,18 @@
                     <small style="margin-left: auto;">Actualiza cada 30s</small>
                 </div>
                 <div style="background: #e6f3ff; border: 1px solid #b3d9ff; border-radius: 3px; padding: 6px; margin-bottom: 8px; font-size: 11px;">
-                    <strong>?? ${appState.currentStation.name}</strong><br>
+                    <strong>🚉 ${appState.currentStation.name}</strong><br>
                     <small>Código: ${appState.currentStation.prefix} | Dificultad: ${appState.currentStation.difficulty}/5 | Servidor: ${appState.currentServer.code}</small>
                 </div>
                 <div class="train-search">
                     <input type="text" id="trainSearchInput" placeholder="Buscar tren o conductor..." />
                     <select id="trainFilterSelect">${createTrainTypeFilter()}</select>
-                    <button id="refreshTrainsButton">?? Actualizar</button>
+                    <button id="refreshTrainsButton">🔄 Actualizar</button>
                 </div>
                 <fieldset class="advanced-filters">
                     <legend>Filtros Adicionales</legend>
                     <div class="filter-controls">
                         <label><input type="checkbox" id="hideOfflineCheckbox" ${appState.filters.hideOffline ? 'checked' : ''}> Ocultar Inactivos</label>
-                        <label><input type="checkbox" id="hideDepartedCheckbox" ${appState.filters.hideDeparted ? 'checked' : ''}> Ocultar Trenes que ya pasaron</label>
-                        <div class="radius-filter">
-                            <span>Cercanía:</span>
-                            <label><input type="radio" name="radius" value="10" ${appState.filters.radius === '10' ? 'checked' : ''}> 10km</label>
-                            <label><input type="radio" name="radius" value="25" ${appState.filters.radius === '25' ? 'checked' : ''}> 25km</label>
-                            <label><input type="radio" name="radius" value="none" ${appState.filters.radius === 'none' ? 'checked' : ''}> Sin Límite</label>
-                        </div>
                     </div>
                 </fieldset>
                 <div class="train-list"></div>
@@ -1185,15 +1254,14 @@
         document.getElementById('trainSearchInput').addEventListener('input', updateTrainDisplay);
         document.getElementById('trainFilterSelect').addEventListener('change', updateTrainDisplay);
         document.getElementById('refreshTrainsButton').addEventListener('click', async () => {
-          await loadTrains(appState.currentServer.code, appState.currentStation.id);
+          await loadTrains(appState.currentServer.code);
           document.getElementById('trainFilterSelect').innerHTML = createTrainTypeFilter();
           updateTrainDisplay();
         });
 
-        document.getElementById('hideOfflineCheckbox').addEventListener('change', e => { appState.filters.hideOffline = e.target.checked; updateTrainDisplay(); });
-        document.getElementById('hideDepartedCheckbox').addEventListener('change', e => { appState.filters.hideDeparted = e.target.checked; updateTrainDisplay(); });
-        document.querySelectorAll('input[name="radius"]').forEach(radio => {
-            radio.addEventListener('change', e => { appState.filters.radius = e.target.value; updateTrainDisplay(); });
+        document.getElementById('hideOfflineCheckbox').addEventListener('change', e => { 
+          appState.filters.hideOffline = e.target.checked; 
+          updateTrainDisplay(); 
         });
 
         updateTrainDisplay();
@@ -1209,7 +1277,7 @@
             } else if (appState.currentView === 'stations') {
                 renderStations();
             } else if (appState.currentView === 'trains') {
-                await loadTrains(appState.currentServer.code, appState.currentStation.id);
+                await loadTrains(appState.currentServer.code);
                 renderTrainList();
             }
         } catch (error) {
@@ -1221,28 +1289,33 @@
         if (appState.history.length > 0) {
           const previousView = appState.history.pop();
           appState.currentView = previousView;
-          if (previousView === 'servers') appState.currentServer = null;
-          appState.currentStation = null;
+          if (previousView === 'servers') {
+            appState.currentServer = null;
+            appState.currentStation = null;
+          } else if (previousView === 'stations') {
+            appState.currentStation = null;
+          }
+          stopRealtimeUpdates();
           updateUI();
         }
       }
       
       function updateBackButton() {
         backButton.disabled = appState.history.length === 0;
+        syncClockButton.disabled = appState.currentView === 'servers';
       }
 
       function showLoading(show) {
         loadingOverlay.style.display = show ? 'flex' : 'none';
       }
 
+      // Event Listeners
       simrailAppIcon.addEventListener('click', async () => {
         simrailAppWindow.style.display = 'block';
         appState.serverTime = new Date();
         appState.currentView = 'servers';
         appState.history = [];
         
-        await loadMasterStationList();
-
         updateUI();
         startClock();
       });
@@ -1255,9 +1328,10 @@
 
       soundToggle.addEventListener('click', () => {
         appState.soundEnabled = !appState.soundEnabled;
-        soundToggle.textContent = appState.soundEnabled ? '?? Sonido ON' : '?? Sonido OFF';
+        soundToggle.textContent = appState.soundEnabled ? '🔊 Sonido ON' : '🔇 Sonido OFF';
       });
       
+      // Drag functionality
       let isDragging = false, offsetX, offsetY;
       const titleBar = simrailAppWindow.querySelector('.title-bar');
       titleBar.addEventListener('mousedown', e => {
@@ -1275,6 +1349,7 @@
       });
       document.addEventListener('mouseup', () => { isDragging = false; });
 
+      // Maximize functionality
       let originalRect;
       maximizeButton.addEventListener('click', () => {
           if (simrailAppWindow.classList.contains('maximized')) {
@@ -1286,7 +1361,12 @@
                 simrailAppWindow.style.height = originalRect.height;
               }
           } else {
-              originalRect = { top: simrailAppWindow.style.top, left: simrailAppWindow.style.left, width: simrailAppWindow.style.width, height: simrailAppWindow.style.height };
+              originalRect = { 
+                top: simrailAppWindow.style.top, 
+                left: simrailAppWindow.style.left, 
+                width: simrailAppWindow.style.width, 
+                height: simrailAppWindow.style.height 
+              };
               simrailAppWindow.classList.add('maximized');
               simrailAppWindow.style.top = '0';
               simrailAppWindow.style.left = '0';
@@ -1295,13 +1375,19 @@
           }
       });
       
-      startButton.addEventListener('click', e => { e.stopPropagation(); startMenu.style.display = startMenu.style.display === 'flex' ? 'none' : 'flex'; });
+      // Start menu
+      startButton.addEventListener('click', e => { 
+        e.stopPropagation(); 
+        startMenu.style.display = startMenu.style.display === 'flex' ? 'none' : 'flex'; 
+      });
       document.addEventListener('click', () => { startMenu.style.display = 'none'; });
       startMenu.addEventListener('click', e => e.stopPropagation());
 
+      // Theme switching
       theme98Button.addEventListener('click', () => document.body.classList.remove('xp-theme'));
       themeXPButton.addEventListener('click', () => document.body.classList.add('xp-theme'));
       
+      // Clock controls
       setManualTimeButton.addEventListener('click', () => {
         appState.serverTime.setHours(parseInt(hourInput.value, 10) || 0);
         appState.serverTime.setMinutes(parseInt(minuteInput.value, 10) || 0);
@@ -1309,11 +1395,18 @@
         startClock();
       });
 
-      syncClockButton.addEventListener('click', () => { appState.serverTime = new Date(); startClock(); });
+      syncClockButton.addEventListener('click', () => { 
+        appState.serverTime = new Date(); 
+        startClock(); 
+      });
+      
       backButton.addEventListener('click', goBack);
+      
+      // Initialize taskbar time
       setInterval(updateTaskbarTime, 1000);
       updateTaskbarTime();
 
+      // Cleanup on page unload
       window.addEventListener('beforeunload', () => {
         stopRealtimeUpdates();
         if (appState.clockInterval) clearInterval(appState.clockInterval);
