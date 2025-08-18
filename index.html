@@ -811,16 +811,16 @@
       const taskbarTime = document.getElementById('taskbarTime');
 
       // --- SECCIÓN DE API CORREGIDA ---
-      const PROXY_URL = 'https://thingproxy.freeboard.io/fetch/';
+      const PROXY_URL = 'https://api.allorigins.win/raw?url=';
       const API_BASE_URL = 'https://api.simrail.eu:8093'; 
       // NOTA: Esta clave es de ejemplo y es INVÁLIDA. Necesitas conseguir una clave real de SimRail.
       const API_KEY = '5c4176551b04403e8b4e7b8f9a9c7b4e';
 
       const API_URLS = {
-        servers: `${PROXY_URL}${API_BASE_URL}/servers?key=${API_KEY}`,
-        stations: `${PROXY_URL}${API_BASE_URL}/stations?key=${API_KEY}`,
-        // El orden de los parámetros importa: la key primero.
-        trains: (serverCode, stationId) => `${PROXY_URL}${API_BASE_URL}/trains?key=${API_KEY}&serverCode=${serverCode}&stationId=${stationId}`
+        // La URL de destino debe ser codificada para que el proxy la entienda
+        servers: `${PROXY_URL}${encodeURIComponent(`${API_BASE_URL}/servers?key=${API_KEY}`)}`,
+        stations: `${PROXY_URL}${encodeURIComponent(`${API_BASE_URL}/stations?key=${API_KEY}`)}`,
+        trains: (serverCode, stationId) => `${PROXY_URL}${encodeURIComponent(`${API_BASE_URL}/trains?key=${API_KEY}&serverCode=${serverCode}&stationId=${stationId}`)}`
       };
 
       const TRAIN_TYPES = {
@@ -905,11 +905,13 @@
           }
           const data = await response.json();
           // La API oficial puede o no envolver la respuesta en un objeto "data"
-          if ('data' in data) {
-              // Si la respuesta es un error de API, el `data` puede estar vacío.
-              if (data.status === 'error') throw new Error(data.message);
+          if (data && data.status === 'error') {
+            throw new Error(data.message || 'Error de API desconocido');
+          }
+          if (data && 'data' in data) {
               return data.data;
           }
+          // El proxy AllOrigins devuelve el JSON directamente
           return data; 
         } catch (error) {
           console.error('? Error fetching data:', error);
@@ -931,7 +933,6 @@
         } catch(error) {
             console.error("Failed to load master station list", error);
             appState.masterStationList = [];
-            // Mostramos un error más específico si falla aquí
             explorerContent.innerHTML = `<div class="error-message">Fallo al cargar la lista de estaciones.<br>Mensaje: ${error.message}</div>`;
         }
       }
