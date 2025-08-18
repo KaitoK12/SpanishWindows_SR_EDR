@@ -810,18 +810,18 @@
       const syncClockButton = document.getElementById('syncClockButton');
       const taskbarTime = document.getElementById('taskbarTime');
 
-      // --- SECCIÓN DE API CORREGIDA ---
-      const PROXY_URL = 'https://api.allorigins.win/raw?url=';
-      const API_BASE_URL = 'https://api.simrail.eu:8093'; 
-      // NOTA: Esta clave es de ejemplo y es INVÁLIDA. Necesitas conseguir una clave real de SimRail.
-      const API_KEY = '5c4176551b04403e8b4e7b8f9a9c7b4e';
+      // --- SECCIÓN DE API CORREGIDA (NUEVO PROXY) ---
+	// Cambiamos a cors-anywhere, que es más robusto.
+	const PROXY_URL = 'https://cors-anywhere.herokuapp.com/'; 
+	const API_BASE_URL = 'https://api.simrail.eu:8093'; 
+	const API_KEY = '5c4176551b04403e8b4e7b8f9a9c7b4e'; // Clave de ejemplo inválida
 
-      const API_URLS = {
-        // La URL de destino debe ser codificada para que el proxy la entienda
-        servers: `${PROXY_URL}${encodeURIComponent(`${API_BASE_URL}/servers?key=${API_KEY}`)}`,
-        stations: `${PROXY_URL}${encodeURIComponent(`${API_BASE_URL}/stations?key=${API_KEY}`)}`,
-        trains: (serverCode, stationId) => `${PROXY_URL}${encodeURIComponent(`${API_BASE_URL}/trains?key=${API_KEY}&serverCode=${serverCode}&stationId=${stationId}`)}`
-      };
+	const API_URLS = {
+	  // Ya no es necesario codificar la URL para este proxy
+	  servers: `${PROXY_URL}${API_BASE_URL}/servers?key=${API_KEY}`,
+ 	 stations: `${PROXY_URL}${API_BASE_URL}/stations?key=${API_KEY}`,
+	  trains: (serverCode, stationId) => `${PROXY_URL}${API_BASE_URL}/trains?key=${API_KEY}&serverCode=${serverCode}&stationId=${stationId}`
+	};
 
       const TRAIN_TYPES = {
         'ROJ': { name: 'Regionale Osobowy Jednotka', type: 'passenger', description: 'Tren regional de pasajeros' },
@@ -897,29 +897,40 @@
       }
       
       async function fetchData(url) {
-        showLoading(true);
-        try {
-          const response = await fetch(url);
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          const data = await response.json();
-          // La API oficial puede o no envolver la respuesta en un objeto "data"
-          if (data && data.status === 'error') {
-            throw new Error(data.message || 'Error de API desconocido');
-          }
-          if (data && 'data' in data) {
-              return data.data;
-          }
-          // El proxy AllOrigins devuelve el JSON directamente
-          return data; 
-        } catch (error) {
-          console.error('? Error fetching data:', error);
-          throw error;
-        } finally {
-          showLoading(false);
-        }
+  showLoading(true);
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      // Si la respuesta no es OK (ej. 404, 500), lanzamos un error claro
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    // --- MEJORA DE ROBUSTEZ ---
+    // Leemos la respuesta como texto plano primero
+    const responseText = await response.text();
+    
+    try {
+      // Intentamos convertir el texto en JSON
+      const data = JSON.parse(responseText);
+      
+      // Lógica de la API oficial (puede o no tener un wrapper 'data')
+      if (data && data.status === 'error') {
+        throw new Error(data.message || 'Error de API desconocido');
       }
+      return data.data || data;
+    } catch (e) {
+      // Si falla el parseo, es que no era JSON (probablemente una página de error del proxy)
+      console.error("La respuesta del servidor no era un JSON válido:", responseText);
+      throw new Error("El proxy devolvió una respuesta inesperada (probablemente una página de error HTML).");
+    }
+    
+  } catch (error) {
+    console.error('? Error fetching data:', error);
+    throw error;
+  } finally {
+    showLoading(false);
+  }
+}
 
       async function loadServers() {
         const servers = await fetchData(API_URLS.servers);
@@ -1330,3 +1341,4 @@
   </script>
 </body>
 </html>
+
